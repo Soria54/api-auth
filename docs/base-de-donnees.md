@@ -69,13 +69,15 @@ erDiagram
 
 ### `jeton_rafraichissement`
 
-| Colonne          | Type          | Obligatoire | Unique | Rôle                                                |
-| ---------------- | ------------- | ----------- | ------ | --------------------------------------------------- |
-| `id_utilisateur` | `integer`     | oui         |        | Compte ; `ON DELETE CASCADE`                        |
-| `jeton_hash`     | `string(64)`  | oui         | oui    | SHA-256 hex du jeton (le jeton n'est jamais stocké) |
-| `appareil`       | `string(255)` |             |        | Libellé libre envoyé à la connexion                 |
-| `expire_le`      | `datetime`    | oui         |        | Création + 30 jours                                 |
-| `revoque_le`     | `datetime`    |             |        | Rotation, déconnexion, changement de mot de passe   |
+| Colonne            | Type          | Obligatoire | Unique | Rôle                                                                   |
+| ------------------ | ------------- | ----------- | ------ | ---------------------------------------------------------------------- |
+| `id_utilisateur`   | `integer`     | oui         |        | Compte ; `ON DELETE CASCADE`                                           |
+| `jeton_hash`       | `string(64)`  | oui         | oui    | SHA-256 hex du jeton (le jeton n'est jamais stocké)                    |
+| `appareil`         | `string(255)` |             |        | Libellé libre envoyé à la connexion                                    |
+| `expire_le`        | `datetime`    | oui         |        | Création + 30 jours                                                    |
+| `revoque_le`       | `datetime`    |             |        | Rotation, déconnexion, changement de mot de passe                      |
+| `motif_revocation` | `string(20)`  |             |        | `rotation`, `deconnexion`, `toutes_sessions`, `mot_de_passe` (`CHECK`) |
+| `debut_session`    | `datetime`    | oui         |        | Connexion d'origine, recopiée à chaque rotation (90 jours max)         |
 
 - Une ligne révoquée est gardée jusqu'à son expiration. Si un jeton remplacé par **rotation**
   revient plus de 10 secondes après, c'est une copie : toutes les sessions du compte sont
