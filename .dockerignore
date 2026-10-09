@@ -1,0 +1,10 @@
+node_modules
+coverage
+logs
+tests
+.git
+.github
+.husky
+.env
+.env.*
+*.sqlite

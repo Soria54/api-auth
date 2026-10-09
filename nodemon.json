@@ -1,0 +1,19 @@
+{
+  "watch": [
+    "server.js",
+    "app.js",
+    "config",
+    "controllers",
+    "middlewares",
+    "models",
+    "routes",
+    "security",
+    "services",
+    "utils",
+    "validators"
+  ],
+  "ext": "js,json",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

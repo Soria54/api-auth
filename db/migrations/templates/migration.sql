@@ -1,0 +1,4 @@
+-- Migration {{migration}}
+-- Écrite dans le dialecte de la base (voir DB_DIALECT). Exécutée dans une transaction.
+-- Nommer explicitement les contraintes : PK_<table>, FK_<table>_<colonne>, UQ_<table>_<colonnes>,
+-- CK_<table>_<colonne>, IX_<table>_<colonnes>.

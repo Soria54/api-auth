@@ -1,0 +1,1 @@
+-- Rollback de {{migration}} : défait exactement migration.sql, dans l'ordre inverse.

@@ -1,0 +1,33 @@
+{
+  "root": true,
+  "env": {
+    "es2022": true,
+    "node": true
+  },
+  "extends": ["eslint:recommended", "airbnb-base", "plugin:prettier/recommended"],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-console": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "consistent-return": "off",
+    "camelcase": "off",
+    "no-underscore-dangle": "off",
+    "import/extensions": ["error", "ignorePackages"],
+    "import/prefer-default-export": "off",
+    "import/no-unresolved": ["error", { "ignore": ["^vitest"] }]
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.js", "tools/**/*.js", "tests/**/*.js", "*.config.js"],
+      "rules": {
+        "no-console": "off",
+        "no-await-in-loop": "off",
+        "no-restricted-syntax": "off",
+        "import/no-extraneous-dependencies": "off"
+      }
+    }
+  ]
+}
