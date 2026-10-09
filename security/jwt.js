@@ -1,51 +1,84 @@
 /**
- * Jetons JWT signés par l'API (HS256, secret partagé `JWT_SECRET`).
+ * Jetons d'accès JWT signés par l'API avec une clé privée Ed25519 (algorithme EdDSA).
  *
- * Fail-closed : sans secret valide (absent ou trop court), l'API refuse de démarrer
- * (`initJwtOuArreter`). Jamais de secret par défaut, jamais de mode « sans vérification ».
- * L'algorithme est imposé à la vérification : un jeton `alg: none` ou RS256 est refusé.
+ * Pourquoi une paire de clés et pas un secret partagé (HS256) : les autres applications
+ * (SSO à venir) vérifient les jetons avec la clé PUBLIQUE, publiée sur
+ * `/.well-known/jwks.json`, sans jamais pouvoir en fabriquer.
+ *
+ * Fail-closed : sans clé Ed25519 valide, l'API refuse de démarrer (`initJwtOuArreter`).
+ * L'algorithme est imposé à la vérification : un jeton `alg: none`, HS256 ou RS256 est refusé.
+ * Clé : `JWT_CLE_PRIVEE_FICHIER` (chemin d'un PEM PKCS#8, production) ou `JWT_CLE_PRIVEE`
+ * (PEM dans la variable, `\n` accepté). Génération : `npm run cle:generer`.
  */
-import { SignJWT, jwtVerify } from 'jose';
-import { LONGUEUR_SECRET_JWT_MIN } from '../config/constantes.js';
+import { createPrivateKey, createPublicKey } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { SignJWT, calculateJwkThumbprint, exportJWK, jwtVerify } from 'jose';
+import { DUREE_JETON_ACCES_DEFAUT } from '../config/constantes.js';
 import { logger } from '../config/logger.js';
 import { lirePackage } from '../utils/version.js';
 
-const ALGORITHME = 'HS256';
-const emetteur = () => lirePackage().name;
+const ALGORITHME = 'EdDSA';
+const emetteur = () => process.env.JWT_EMETTEUR || lirePackage().name;
 
-const lireSecret = () => {
-  const secret = process.env.JWT_SECRET ?? '';
-  if (secret.length < LONGUEUR_SECRET_JWT_MIN) {
-    throw new Error(
-      `JWT_SECRET absent ou trop court (${LONGUEUR_SECRET_JWT_MIN} caractères minimum)`,
-    );
-  }
-  return new TextEncoder().encode(secret);
+let cache = null;
+
+const lireSource = () => {
+  const fichier = process.env.JWT_CLE_PRIVEE_FICHIER;
+  if (fichier) return { cle: `fichier:${fichier}`, lire: () => readFileSync(fichier, 'utf8') };
+  const pem = (process.env.JWT_CLE_PRIVEE ?? '').replaceAll('\\n', '\n');
+  return { cle: `variable:${pem}`, lire: () => pem };
 };
 
-export const initJwtOuArreter = () => {
+/** Clés chargées une fois par source (fichier ou variable), puis gardées en mémoire. */
+const chargerCles = async () => {
+  const source = lireSource();
+  if (cache?.source === source.cle) return cache;
+  const pem = source.lire();
+  if (!pem.trim()) throw new Error('JWT_CLE_PRIVEE_FICHIER (ou JWT_CLE_PRIVEE) absente');
+  const privee = createPrivateKey(pem);
+  if (privee.asymmetricKeyType !== 'ed25519') throw new Error('La clé JWT doit être Ed25519');
+  const publique = createPublicKey(privee);
+  const jwk = await exportJWK(publique);
+  const kid = await calculateJwkThumbprint(jwk);
+  cache = {
+    source: source.cle,
+    privee,
+    publique,
+    kid,
+    jwk: { ...jwk, kid, alg: ALGORITHME, use: 'sig' },
+  };
+  return cache;
+};
+
+export const initJwtOuArreter = async () => {
   try {
-    lireSecret();
+    await chargerCles();
   } catch (err) {
-    logger.error(`${err.message} : arrêt.`);
+    logger.error(`Clé JWT invalide (${err.message}) : arrêt.`);
     process.exit(1);
   }
 };
 
-export const signerJeton = async ({ id, email, role }) =>
-  new SignJWT({ email, role })
-    .setProtectedHeader({ alg: ALGORITHME })
+export const signerJeton = async ({ id, nom_utilisateur: nomUtilisateur, role }) => {
+  const { privee, kid } = await chargerCles();
+  return new SignJWT({ nom_utilisateur: nomUtilisateur, role })
+    .setProtectedHeader({ alg: ALGORITHME, kid, typ: 'JWT' })
     .setSubject(String(id))
     .setIssuer(emetteur())
     .setIssuedAt()
-    .setExpirationTime(process.env.JWT_DUREE || '1h')
-    .sign(lireSecret());
+    .setExpirationTime(process.env.JWT_DUREE || DUREE_JETON_ACCES_DEFAUT)
+    .sign(privee);
+};
 
-/** Renvoie `{ id, email, role }` ou lève si le jeton est invalide ou expiré. */
+/** Renvoie `{ id, nom_utilisateur, role }` ou lève si le jeton est invalide ou expiré. */
 export const verifierJeton = async (jeton) => {
-  const { payload } = await jwtVerify(jeton, lireSecret(), {
+  const { publique } = await chargerCles();
+  const { payload } = await jwtVerify(jeton, publique, {
     algorithms: [ALGORITHME],
     issuer: emetteur(),
   });
-  return { id: Number(payload.sub), email: payload.email, role: payload.role };
+  return { id: Number(payload.sub), nom_utilisateur: payload.nom_utilisateur, role: payload.role };
 };
+
+/** Jeu de clés publiques (JWKS) pour les applications qui vérifient nos jetons. */
+export const lireJwks = async () => ({ keys: [(await chargerCles()).jwk] });

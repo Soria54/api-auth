@@ -1,0 +1,65 @@
+# API d'authentification sur le serveur maison (VM Debian + Docker), avec sa base PostgreSQL.
+# Mode d'emploi : deploiement/README.md
+#
+#   docker compose -f deploiement/compose.yaml up -d --build
+#   docker compose -f deploiement/compose.yaml run --rm api npm run db:migrate
+
+services:
+  api:
+    build: ..
+    image: api-auth
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DB_DIALECT: postgres
+      DB_HOST: base
+      DB_PORT: 5432
+      JWT_CLE_PRIVEE_FICHIER: /run/secrets/jwt_cle_privee
+    secrets:
+      - jwt_cle_privee
+    depends_on:
+      base:
+        condition: service_healthy
+    # Sans nom de domaine : port ouvert sur le réseau local seulement (pas de redirection sur la box).
+    # Avec Traefik (étape 05 de parcours-serveur) : retirer `ports`, ajouter le réseau `proxy`
+    # et les labels ci-dessous.
+    ports:
+      - '${PORT_API:-3000}:3000'
+    networks:
+      - interne
+    # labels:
+    #   - 'traefik.enable=true'
+    #   - 'traefik.http.routers.auth.rule=Host(`auth.mondomaine.fr`)'
+    #   - 'traefik.http.routers.auth.entrypoints=websecure'
+    #   - 'traefik.http.routers.auth.tls.certresolver=le'
+    #   - 'traefik.http.services.auth.loadbalancer.server.port=3000'
+
+  base:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: api_auth
+      POSTGRES_USER: api_auth
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans deploiement/.env}
+    # PostgreSQL 18 : le volume se monte sur /var/lib/postgresql (et non plus …/data).
+    volumes:
+      - donnees:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U api_auth -d api_auth']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Pas de `ports` : la base n'est joignable que par l'API, sur le réseau `interne`.
+    networks:
+      - interne
+
+secrets:
+  jwt_cle_privee:
+    file: ../secrets/jwt-ed25519.pem
+
+volumes:
+  donnees:
+
+networks:
+  interne:

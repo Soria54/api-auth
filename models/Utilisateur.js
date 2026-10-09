@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 
-/** Table `utilisateur` — créée par la migration `creation_utilisateur`. */
+/** Table `utilisateur` — créée par la migration `001_creation_utilisateur`. */
 export const defineUtilisateur = (sequelize) =>
   sequelize.define(
     'Utilisateur',
@@ -10,8 +10,9 @@ export const defineUtilisateur = (sequelize) =>
         primaryKey: true,
         autoIncrement: true,
       },
-      email: {
-        type: DataTypes.STRING(255),
+      // Toujours en minuscules (le validateur normalise) : unicité insensible à la casse.
+      nom_utilisateur: {
+        type: DataTypes.STRING(30),
         allowNull: false,
         unique: true,
       },
@@ -24,6 +25,37 @@ export const defineUtilisateur = (sequelize) =>
         allowNull: false,
         defaultValue: 'utilisateur',
       },
+      prenom: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      sexe: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+      },
+      // Facultatif ; plusieurs NULL sont permis par l'index unique.
+      email: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: true,
+      },
+      email_verifie: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      ville: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      date_naissance: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      derniere_connexion: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       tableName: 'utilisateur',
@@ -31,7 +63,7 @@ export const defineUtilisateur = (sequelize) =>
       underscored: true,
       createdAt: 'created_at',
       updatedAt: 'updated_at',
-      // Le hash ne sort jamais par défaut : `scope('avecMotDePasse')` pour la connexion.
+      // Le hash ne sort jamais par défaut : `scope('avecMotDePasse')` pour le vérifier.
       defaultScope: { attributes: { exclude: ['mot_de_passe_hash'] } },
       scopes: { avecMotDePasse: { attributes: { include: ['mot_de_passe_hash'] } } },
     },

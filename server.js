@@ -11,7 +11,7 @@ const { creerSequelize, initialiserBase } = await import('./models/index.js');
 const { creerApp } = await import('./app.js');
 const { initJwtOuArreter } = await import('./security/jwt.js');
 
-initJwtOuArreter();
+await initJwtOuArreter();
 // @@demarrage
 
 const sequelize = creerSequelize();

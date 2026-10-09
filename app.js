@@ -4,7 +4,7 @@
  * Ordre de montage — ne pas le changer sans raison écrite :
  *   1. trust proxy, journal HTTP (avant tout : même les requêtes rejetées sont tracées)
  *   2. helmet, CORS, lecture du corps JSON (taille bornée)
- *   3. routes système (hors /api, sans authentification)
+ *   3. routes système et `/.well-known` (hors /api, sans authentification)
  *   4. quota global puis routes /api
  *   5. 404 JSON puis gestionnaire d'erreurs terminal
  */
@@ -16,6 +16,7 @@ import { httpLogger } from './config/logger.js';
 import { gestionnaireErreurs, routeIntrouvable } from './middlewares/gestionErreurs.js';
 import { creerLimiteur } from './middlewares/limiteur.js';
 import routes from './routes/index.js';
+import jwksRoutes from './routes/jwks.route.js';
 import { creerRoutesSysteme } from './routes/systeme.route.js';
 
 const lireOriginesCors = () =>
@@ -26,7 +27,8 @@ const lireOriginesCors = () =>
 
 const lireTrustProxy = () => {
   const valeur = Number(process.env.TRUST_PROXY_HOPS);
-  return Number.isInteger(valeur) && valeur >= 0 ? valeur : 1;
+  // 0 par défaut : sans proxy déclaré, X-Forwarded-For est ignoré (sinon quotas contournables).
+  return Number.isInteger(valeur) && valeur >= 0 ? valeur : 0;
 };
 
 export const creerApp = ({ db }) => {
@@ -41,6 +43,7 @@ export const creerApp = ({ db }) => {
   app.use(express.json({ limit: LIMITE_CORPS_JSON }));
 
   app.use(creerRoutesSysteme({ db }));
+  app.use('/.well-known', jwksRoutes);
 
   app.use('/api', creerLimiteur({ limite: LIMITE_REQUETES_API, fenetreMs: FENETRE_LIMITE_MS }));
   app.use('/api', routes);

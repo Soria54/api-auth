@@ -8,16 +8,19 @@
 import { Router } from 'express';
 import authRoutes from './auth.route.js';
 import { exigerAuthentification } from '../middlewares/exigerAuthentification.js';
+import moiRoutes from './moi.route.js';
 // @@imports-routes
 
 const router = Router();
 
+// Publiques : on ne peut pas exiger un jeton pour obtenir un jeton.
 router.use('/auth', authRoutes);
+// @@routes-publiques
 
 // Tout ce qui suit exige un jeton valide : refus par défaut.
 router.use(exigerAuthentification);
-// @@routes-publiques
 
+router.use('/moi', moiRoutes);
 // @@routes
 
 export default router;

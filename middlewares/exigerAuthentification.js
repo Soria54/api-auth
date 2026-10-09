@@ -1,5 +1,5 @@
 /**
- * Exige un jeton `Authorization: Bearer <jwt>` valide et pose `req.auth = { id, email, role }`.
+ * Exige un jeton `Authorization: Bearer <jwt>` valide et pose `req.auth = { id, nom_utilisateur, role }`.
  * Toute absence ou invalidité → même 401 générique (aucun indice sur la cause).
  */
 import { verifierJeton } from '../security/jwt.js';
@@ -9,7 +9,8 @@ const refuser = (res) => sendError(res, 'Authentification requise.', 401, { code
 
 export const exigerAuthentification = async (req, res, next) => {
   const [schema, jeton] = (req.headers.authorization ?? '').split(' ');
-  if (schema !== 'Bearer' || !jeton) return refuser(res);
+  // Schéma insensible à la casse (RFC 7235) : `bearer` vient de certains clients tiers.
+  if (schema?.toLowerCase() !== 'bearer' || !jeton) return refuser(res);
   try {
     req.auth = await verifierJeton(jeton);
     return next();

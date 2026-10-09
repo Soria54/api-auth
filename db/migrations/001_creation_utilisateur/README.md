@@ -2,11 +2,15 @@
 
 ## Objectif
 
-Crée la table `utilisateur` de l'authentification JWT (`/api/auth`).
+Crée la table `utilisateur` : comptes partagés par les applications qui utilisent l'API.
 
 ## Changements
 
-- `email` unique (stocké en minuscules par le validateur), `mot_de_passe_hash` (scrypt), `role` (défaut `utilisateur`).
+- `nom_utilisateur` unique et obligatoire, toujours en minuscules (contrainte `CHECK`).
+- `mot_de_passe_hash` (scrypt), `role` (défaut `utilisateur`).
+- Facultatifs : `prenom`, `sexe` (`femme`, `homme`, `autre`), `email` (unique), `ville`,
+  `date_naissance`. `email_verifie` (faux par défaut), `derniere_connexion`.
+- Pas d'adresse postale : la ville seulement.
 
 ## Rollback
 

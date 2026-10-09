@@ -5,6 +5,8 @@ tests
 .git
 .github
 .husky
-.env
-.env.*
+**/.env
+**/.env.*
+!**/.env.example
 *.sqlite
+**/secrets

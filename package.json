@@ -23,6 +23,7 @@
     "db:migrate:status": "node scripts/migrations.js statut",
     "db:migrate:rollback": "node scripts/migrations.js annuler",
     "db:migration:create": "node scripts/creerMigration.js",
+    "cle:generer": "node scripts/genererCleJwt.js",
     "prepare": "husky"
   },
   "dependencies": {
