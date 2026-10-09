@@ -88,6 +88,8 @@ Comptes partagés par plusieurs applications : musculation d'abord, d'autres en 
 
 ## Plus tard
 
+- Purge périodique des sessions expirées (`DELETE FROM jeton_rafraichissement WHERE expire_le < now()`),
+  par une tâche planifiée : aujourd'hui, seules celles des comptes qui reviennent sont purgées.
 - Double authentification (TOTP puis email) : Soria54/api-auth#1.
 - SSO complet (OpenID Connect, ex. `oidc-provider`) une fois un domaine en place ;
   `JWT_EMETTEUR` = URL publique.

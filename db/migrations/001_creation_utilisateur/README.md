@@ -7,7 +7,8 @@ Crée la table `utilisateur` : comptes partagés par les applications qui utilis
 ## Changements
 
 - `nom_utilisateur` unique et obligatoire, toujours en minuscules (contrainte `CHECK`).
-- `mot_de_passe_hash` (scrypt), `role` (défaut `utilisateur`).
+- `mot_de_passe_hash` (scrypt), `role` (`utilisateur` par défaut, ou `admin` ; `CHECK`).
+- `email` toujours en minuscules (`CHECK`).
 - Facultatifs : `prenom`, `sexe` (`femme`, `homme`, `autre`), `email` (unique), `ville`,
   `date_naissance`. `email_verifie` (faux par défaut), `derniere_connexion`.
 - Pas d'adresse postale : la ville seulement.
